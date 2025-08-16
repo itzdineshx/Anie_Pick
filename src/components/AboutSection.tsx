@@ -10,7 +10,7 @@ const AboutSection = () => {
           About SugoiPick
         </h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Your ultimate anime discovery companion powered by MyAnimeList data
+          Your ultimate anime discovery companion powered by Jikan API
         </p>
       </div>
 
@@ -54,15 +54,15 @@ const AboutSection = () => {
 
       <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
         <CardContent className="p-8 text-center space-y-6">
-          <h3 className="text-2xl font-bold">Powered by MyAnimeList</h3>
+          <h3 className="text-2xl font-bold">Powered by Jikan API</h3>
           <p className="text-muted-foreground max-w-3xl mx-auto">
-            SugoiPick leverages the comprehensive MyAnimeList database to bring you the most accurate and up-to-date anime information. 
+            SugoiPick leverages the powerful Jikan API to bring you the most accurate and up-to-date anime information from MyAnimeList. 
             From ratings and reviews to detailed synopses and episode counts, we ensure you have all the information you need to make informed decisions.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Badge variant="secondary" className="px-3 py-1">
               <ExternalLink className="w-3 h-3 mr-1" />
-              Official MAL Data
+              Jikan API Data
             </Badge>
             <Badge variant="secondary" className="px-3 py-1">
               Real-time Updates
