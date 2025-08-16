@@ -236,57 +236,59 @@ const AnimeCard = ({ anime, isLoading = false, onAnotherAnime }: AnimeCardProps)
             )}
 
             {/* Enhanced Action Buttons */}
-            <div className="pt-6 space-y-4">
-              {/* Main action buttons */}
-              <div className="grid grid-cols-2 gap-3">
+            <div className="pt-4 sm:pt-6 space-y-3 sm:space-y-4">
+              {/* Main action buttons - Full width on mobile */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   onClick={watchTrailer}
                   size="lg"
-                  className="anime-button-secondary h-12 rounded-xl text-sm font-bold tracking-wide"
+                  className="anime-button-secondary h-12 sm:h-14 rounded-xl text-sm font-bold tracking-wide w-full"
                 >
-                  <Youtube className="w-5 h-5 mr-2" />
+                  <Youtube className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   TRAILER
                 </Button>
                 
                 <Button
                   onClick={watchOnAnimeKai}
                   size="lg"
-                  className="anime-button h-12 rounded-xl text-sm font-bold tracking-wide"
+                  className="anime-button h-12 sm:h-14 rounded-xl text-sm font-bold tracking-wide w-full"
                 >
-                  <Monitor className="w-5 h-5 mr-2" />
+                  <Monitor className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   WATCH
                 </Button>
               </div>
 
-              {/* Secondary buttons */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Secondary buttons - Improved mobile layout */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 <Button
                   onClick={toggleFavorite}
                   size="lg"
-                  className="anime-button h-12 rounded-xl text-sm font-bold tracking-wide"
+                  className="anime-button h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold tracking-wide"
                 >
-                  <Heart className={`w-5 h-5 mr-2 ${
+                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 ${
                     isFavorited ? 'fill-red-500 text-red-500' : ''
                   }`} />
-                  FAVORITE
+                  <span className="hidden sm:inline">FAVORITE</span>
+                  <span className="sm:hidden">FAV</span>
                 </Button>
                 
                 <Button
                   onClick={viewOnMAL}
                   size="lg"
-                  className="anime-button h-12 rounded-xl text-sm font-bold tracking-wide"
+                  className="anime-button h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold tracking-wide"
                 >
-                  <ExternalLink className="w-5 h-5 mr-2" />
-                  VIEW MORE
+                  <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">VIEW MORE</span>
+                  <span className="sm:hidden">VIEW</span>
                 </Button>
                 
                 {onAnotherAnime && (
                   <Button
                     onClick={onAnotherAnime}
                     size="lg"
-                    className="anime-button-secondary h-12 rounded-xl text-sm font-bold tracking-wide group"
+                    className="anime-button-secondary h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-bold tracking-wide group col-span-2 sm:col-span-1"
                   >
-                    <RotateCcw className="w-5 h-5 mr-2 transition-transform group-hover:rotate-180 duration-700" />
+                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 transition-transform group-hover:rotate-180 duration-700" />
                     NEXT
                   </Button>
                 )}
