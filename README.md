@@ -19,7 +19,7 @@ It helps you discover random anime series or movies, with filters for genre, yea
 ---
 
 ## 🖼 Preview
-![AniePick Screenshot](./Aniepick.png)
+![AniePick Screenshot](./aniepick.png)
 
 ---
 
