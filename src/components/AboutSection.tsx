@@ -7,7 +7,7 @@ const AboutSection = () => {
     <section id="about" className="space-y-12">
       <div className="text-center space-y-4">
         <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          About SugoiPick
+          About AniePick
         </h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Your ultimate anime discovery companion powered by Jikan API
@@ -56,7 +56,7 @@ const AboutSection = () => {
         <CardContent className="p-8 text-center space-y-6">
           <h3 className="text-2xl font-bold">Powered by Jikan API</h3>
           <p className="text-muted-foreground max-w-3xl mx-auto">
-            SugoiPick leverages the powerful Jikan API to bring you the most accurate and up-to-date anime information from MyAnimeList. 
+            AniePick leverages the powerful Jikan API to bring you the most accurate and up-to-date anime information from MyAnimeList. 
             From ratings and reviews to detailed synopses and episode counts, we ensure you have all the information you need to make informed decisions.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -74,12 +74,6 @@ const AboutSection = () => {
         </CardContent>
       </Card>
 
-      <div className="text-center space-y-4">
-        <h3 className="text-xl font-bold">Ready to Discover?</h3>
-        <p className="text-muted-foreground">
-          Start your anime journey today and uncover your next favorite series!
-        </p>
-      </div>
     </section>
   );
 };

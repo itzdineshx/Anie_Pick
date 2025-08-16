@@ -89,7 +89,7 @@ const DiscoverSection = ({
             <div className="space-y-2 sm:space-y-3">
               <h3 className="text-xl sm:text-2xl font-bold">Ready to Discover?</h3>
               <p className="text-sm sm:text-base text-muted-foreground px-2">
-                Click "Discover Anime" to find amazing recommendations.
+                Click "Pick Anime" to find amazing recommendations.
                 Use the filters above to customize your search!
               </p>
             </div>

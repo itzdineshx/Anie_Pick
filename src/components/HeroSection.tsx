@@ -29,14 +29,14 @@ const HeroSection = ({ shownCount, onResetSession, onSummonAnime, loading }: Her
       <AnimeSparkles count={12} />
       <JapaneseBorder className="mx-auto max-w-4xl">
         <div className="space-y-3 sm:space-y-4">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-tight text-center">
-          <span className="block bg-gradient-red-moon bg-clip-text text-transparent animate-fade-in">
-            ANIME PICK
-          </span>
+        <h1 className="text-[clamp(3rem,10vw,12rem)] font-extrabold tracking-tight leading-tight text-center">
+        <span className="block bg-gradient-red-moon bg-clip-text text-transparent animate-fade-in">
+          ANIE PICK
+        </span>
         </h1>
+
         <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
-          Get personalized anime recommendations based on your preferences. 
-          Filter by genre, type, and rating to find exactly what you're looking for.
+          Your next favorite Anime is just a click away.Get personalized anime recommendations based on your preferences. 
         </p>
         
         <Button 
@@ -52,8 +52,7 @@ const HeroSection = ({ shownCount, onResetSession, onSummonAnime, loading }: Her
             </>
           ) : (
             <>
-              <Sparkles className="w-6 h-6 mr-3 button-icon" />
-              <span className="font-extrabold">DISCOVER ANIME</span>
+              <span className="font-extrabold">PICK ANIME</span>
             </>
           )}
         </Button>
