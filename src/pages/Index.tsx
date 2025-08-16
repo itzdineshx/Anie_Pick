@@ -160,7 +160,6 @@ const Index = () => {
             <span className="font-display text-lg sm:text-xl text-primary tracking-wider">
               Anie Pick
             </span>
-            <Heart className="w-4 h-4 sm:w-5 sm:h-5 fill-primary text-primary" />
           </div>
           <p className="text-sm text-muted-foreground">© 2025 AniePick. All rights reserved.</p>
           <p className="text-sm text-muted-foreground">Your next favorite anime is just a click away.</p>
