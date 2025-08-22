@@ -1,6 +1,17 @@
 # 🍥 AniePick
 
-![AniePick Screenshot](./sugoipick-logo1.png)
+![AniePick Screenshot](./aniepick.png)
+
+
+<div align="center">
+
+[![View Site](https://img.shields.io/badge/View_Live_Site-FF0000?style=for-the-badge&logo=netlify&logoColor=white)](https://aniepick.netlify.app/)
+
+![Jikan API v4](https://img.shields.io/badge/Jikan%20API-v4-2E51A2?logo=myanimelist&logoColor=white&style=for-the-badge)
+![API Status](https://img.shields.io/website?url=https%3A%2F%2Fapi.jikan.moe%2Fv4&label=Jikan%20API&color=2E51A2&style=for-the-badge)
+
+</div>
+
 
 AniePick is a red-and-black themed anime recommendation app powered by the **Jikan API** (MyAnimeList data).  
 It helps you discover random anime series or movies, with filters for genre, year, and more — no endless searching required.
@@ -15,11 +26,6 @@ It helps you discover random anime series or movies, with filters for genre, yea
 - 📄 **Detailed Info** – Title, synopsis, genres, episode count, score, and poster image.
 - ❤️ **Favorites** – Save anime to your personal watchlist (local storage).
 - 🔍 **Filtering** – Narrow results by genre, year, or type (TV, OVA, Movie, etc.).
-
----
-
-## 🖼 Preview
-![AniePick Screenshot](./aniepick.png)
 
 ---
 
@@ -77,5 +83,6 @@ This project is licensed under the MIT License.
 * **Google Fonts** for typography.
 * **Brand Family** – AniePick is part of the “Pick” brand alongside CinePick and MeloPick.
 
-That would make the GitHub repos look premium.
+![AniePick Screenshot](./sugoipick-logo1.png)
+
 ```
