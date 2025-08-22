@@ -85,4 +85,3 @@ This project is licensed under the MIT License.
 
 ![AniePick Screenshot](./sugoipick-logo1.png)
 
-```
