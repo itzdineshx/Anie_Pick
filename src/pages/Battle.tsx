@@ -89,13 +89,83 @@ const Battle = () => {
     setLoading(false);
   };
 
-  const calculateBattleScore = (anime: BattleAnime) => {
+  const calculateDetailedBattleScore = (anime: BattleAnime) => {
+    // Core scoring metrics
     const score = anime.score || 0;
-    const popularity = anime.popularity ? (10000 - anime.popularity) / 100 : 0;
+    const popularity = anime.popularity ? Math.max(0, (10000 - anime.popularity) / 100) : 0;
     const members = anime.members ? Math.log10(anime.members) : 0;
     const favorites = anime.favorites ? Math.log10(anime.favorites + 1) : 0;
+    const scoredBy = anime.scored_by ? Math.log10(anime.scored_by) : 0;
+    const rank = anime.rank ? Math.max(0, (10000 - anime.rank) / 100) : 0;
     
-    return (score * 0.4) + (popularity * 0.25) + (members * 0.2) + (favorites * 0.15);
+    // Additional quality metrics
+    const episodeScore = anime.episodes ? Math.min(anime.episodes / 12, 3) : 1; // Normalized episode count
+    const synopsisQuality = anime.synopsis ? Math.min(anime.synopsis.length / 200, 2) : 0; // Synopsis length as quality indicator
+    const genreVariety = anime.genres ? Math.min(anime.genres.length / 3, 2) : 0; // Genre diversity
+    const studioPrestige = anime.studios && anime.studios.length > 0 ? 1.5 : 1; // Studio presence bonus
+    const recencyBonus = anime.aired?.from ? Math.max(0, (new Date().getFullYear() - new Date(anime.aired.from).getFullYear()) < 5 ? 1 : 0) : 0;
+    
+    // Weighted calculation with more comprehensive factors
+    const baseScore = (score * 0.30) + (popularity * 0.20) + (members * 0.15) + (favorites * 0.10) + (scoredBy * 0.10) + (rank * 0.15);
+    const qualityBonus = (episodeScore * 0.3) + (synopsisQuality * 0.2) + (genreVariety * 0.2) + (studioPrestige * 0.2) + (recencyBonus * 0.1);
+    
+    return baseScore + qualityBonus;
+  };
+
+  const getDetailedComparison = (anime1: BattleAnime, anime2: BattleAnime) => {
+    const metrics = [
+      {
+        name: 'MyAnimeList Score',
+        anime1Value: anime1.score || 0,
+        anime2Value: anime2.score || 0,
+        format: (val: number) => val.toFixed(2),
+        weight: '30%'
+      },
+      {
+        name: 'Popularity Rank',
+        anime1Value: anime1.popularity || 999999,
+        anime2Value: anime2.popularity || 999999,
+        format: (val: number) => `#${val.toLocaleString()}`,
+        weight: '20%',
+        inverse: true // Lower is better
+      },
+      {
+        name: 'Community Size',
+        anime1Value: anime1.members || 0,
+        anime2Value: anime2.members || 0,
+        format: (val: number) => val.toLocaleString(),
+        weight: '15%'
+      },
+      {
+        name: 'User Favorites',
+        anime1Value: anime1.favorites || 0,
+        anime2Value: anime2.favorites || 0,
+        format: (val: number) => val.toLocaleString(),
+        weight: '10%'
+      },
+      {
+        name: 'Users Scored',
+        anime1Value: anime1.scored_by || 0,
+        anime2Value: anime2.scored_by || 0,
+        format: (val: number) => val.toLocaleString(),
+        weight: '10%'
+      },
+      {
+        name: 'Overall Rank',
+        anime1Value: anime1.rank || 999999,
+        anime2Value: anime2.rank || 999999,
+        format: (val: number) => `#${val.toLocaleString()}`,
+        weight: '15%',
+        inverse: true
+      }
+    ];
+
+    return metrics.map(metric => ({
+      ...metric,
+      winner: metric.inverse 
+        ? (metric.anime1Value < metric.anime2Value ? 'anime1' : metric.anime2Value < metric.anime1Value ? 'anime2' : 'tie')
+        : (metric.anime1Value > metric.anime2Value ? 'anime1' : metric.anime2Value > metric.anime1Value ? 'anime2' : 'tie')
+    }));
   };
 
   const startBattle = () => {
@@ -108,8 +178,9 @@ const Battle = () => {
       return;
     }
 
-    const score1 = calculateBattleScore(anime1);
-    const score2 = calculateBattleScore(anime2);
+    const score1 = calculateDetailedBattleScore(anime1);
+    const score2 = calculateDetailedBattleScore(anime2);
+    const detailedComparison = getDetailedComparison(anime1, anime2);
     
     const battleWinner = score1 > score2 ? 'anime1' : 'anime2';
     setWinner(battleWinner);
@@ -124,6 +195,7 @@ const Battle = () => {
         battleScore: score2
       },
       winner: battleWinner,
+      detailedComparison,
       battleDate: new Date().toISOString()
     };
     
@@ -408,24 +480,147 @@ const Battle = () => {
           )}
         </div>
 
+        {/* Detailed Battle Results */}
+        {battleResults && (
+          <div className="space-y-6 mb-8">
+            {/* Winner Announcement */}
+            <Card className="sophisticated-card bg-gradient-to-r from-primary/20 to-accent/20 border-2 border-primary/50">
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  <Trophy className="w-16 h-16 text-primary" />
+                </div>
+                <CardTitle className="text-3xl font-display bg-gradient-red-moon bg-clip-text text-transparent">
+                  🏆 VICTORY ANNOUNCEMENT 🏆
+                </CardTitle>
+                <CardDescription className="text-lg mt-2">
+                  {battleResults.winner === 'anime1' ? battleResults.anime1.title : battleResults.anime2.title} emerges victorious!
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="grid md:grid-cols-2 gap-4 mt-4">
+                  <div className={`p-4 rounded-lg ${battleResults.winner === 'anime1' ? 'bg-primary/20 border-2 border-primary' : 'bg-muted/50'}`}>
+                    <h3 className="font-semibold text-lg">{battleResults.anime1.title}</h3>
+                    <p className="text-2xl font-bold text-primary">
+                      {battleResults.anime1.battleScore.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Battle Score</p>
+                  </div>
+                  <div className={`p-4 rounded-lg ${battleResults.winner === 'anime2' ? 'bg-primary/20 border-2 border-primary' : 'bg-muted/50'}`}>
+                    <h3 className="font-semibold text-lg">{battleResults.anime2.title}</h3>
+                    <p className="text-2xl font-bold text-primary">
+                      {battleResults.anime2.battleScore.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Battle Score</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Detailed Comparison */}
+            <Card className="sophisticated-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-primary" />
+                  Detailed Battle Analysis
+                </CardTitle>
+                <CardDescription>
+                  Head-to-head comparison across all major anime metrics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {battleResults.detailedComparison.map((metric: any, index: number) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-border rounded-lg">
+                      <div className="md:col-span-1">
+                        <h4 className="font-semibold text-sm">{metric.name}</h4>
+                        <p className="text-xs text-muted-foreground">Weight: {metric.weight}</p>
+                      </div>
+                      <div className={`text-center p-2 rounded ${metric.winner === 'anime1' ? 'bg-primary/20 text-primary font-bold' : 'bg-muted/50'}`}>
+                        <p className="text-sm font-medium">{battleResults.anime1.title}</p>
+                        <p className="text-lg">{metric.format(metric.anime1Value)}</p>
+                      </div>
+                      <div className="text-center flex items-center justify-center">
+                        <span className="text-2xl">⚔️</span>
+                      </div>
+                      <div className={`text-center p-2 rounded ${metric.winner === 'anime2' ? 'bg-primary/20 text-primary font-bold' : 'bg-muted/50'}`}>
+                        <p className="text-sm font-medium">{battleResults.anime2.title}</p>
+                        <p className="text-lg">{metric.format(metric.anime2Value)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Additional Stats */}
+                <div className="mt-6 pt-6 border-t border-border">
+                  <h4 className="font-semibold mb-4">Additional Battle Stats</h4>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h5 className="font-medium text-sm mb-2">{battleResults.anime1.title}</h5>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <p><strong>Type:</strong> {battleResults.anime1.type || 'N/A'}</p>
+                        <p><strong>Episodes:</strong> {battleResults.anime1.episodes || 'Unknown'}</p>
+                        <p><strong>Year:</strong> {battleResults.anime1.aired?.from ? new Date(battleResults.anime1.aired.from).getFullYear() : 'N/A'}</p>
+                        <p><strong>Rating:</strong> {battleResults.anime1.rating || 'N/A'}</p>
+                        <p><strong>Studios:</strong> {battleResults.anime1.studios?.map((s: any) => s.name).join(', ') || 'N/A'}</p>
+                        <p><strong>Genres:</strong> {battleResults.anime1.genres?.slice(0, 3).map((g: any) => g.name).join(', ') || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-sm mb-2">{battleResults.anime2.title}</h5>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <p><strong>Type:</strong> {battleResults.anime2.type || 'N/A'}</p>
+                        <p><strong>Episodes:</strong> {battleResults.anime2.episodes || 'Unknown'}</p>
+                        <p><strong>Year:</strong> {battleResults.anime2.aired?.from ? new Date(battleResults.anime2.aired.from).getFullYear() : 'N/A'}</p>
+                        <p><strong>Rating:</strong> {battleResults.anime2.rating || 'N/A'}</p>
+                        <p><strong>Studios:</strong> {battleResults.anime2.studios?.map((s: any) => s.name).join(', ') || 'N/A'}</p>
+                        <p><strong>Genres:</strong> {battleResults.anime2.genres?.slice(0, 3).map((g: any) => g.name).join(', ') || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Battle Explanation */}
         <Card className="sophisticated-card">
           <CardHeader>
             <CardTitle>How Battle Mode Works</CardTitle>
-            <CardDescription>Understanding the anime comparison algorithm</CardDescription>
+            <CardDescription>Understanding the comprehensive anime comparison algorithm</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Battle Mode compares two anime based on multiple factors to determine which is "better" to watch:
+              Battle Mode uses a sophisticated algorithm that analyzes multiple data points from Jikan API (MyAnimeList) to determine which anime is objectively "better" to watch:
             </p>
-            <ul className="text-sm text-muted-foreground space-y-2">
-              <li><strong>• Score (40%):</strong> MAL user ratings</li>
-              <li><strong>• Popularity (25%):</strong> Ranking position (lower is better)</li>
-              <li><strong>• Community Size (20%):</strong> Total member count</li>
-              <li><strong>• Favorites (15%):</strong> Number of users who favorited it</li>
-            </ul>
-            <p className="text-xs text-muted-foreground">
-              The algorithm calculates a weighted battle score to determine the winner objectively.
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Core Metrics (Weighted)</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li><strong>• MAL Score (30%):</strong> User ratings average</li>
+                  <li><strong>• Popularity Rank (20%):</strong> Overall popularity position</li>
+                  <li><strong>• Community Size (15%):</strong> Total member count</li>
+                  <li><strong>• Overall Rank (15%):</strong> MyAnimeList ranking</li>
+                  <li><strong>• Users Scored (10%):</strong> Rating sample size</li>
+                  <li><strong>• User Favorites (10%):</strong> Times favorited</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Quality Bonuses</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li><strong>• Episode Balance:</strong> Optimal episode count scoring</li>
+                  <li><strong>• Synopsis Quality:</strong> Description completeness</li>
+                  <li><strong>• Genre Diversity:</strong> Multi-genre appeal</li>
+                  <li><strong>• Studio Prestige:</strong> Production quality indicator</li>
+                  <li><strong>• Recency Bonus:</strong> Recent releases get slight boost</li>
+                </ul>
+              </div>
+            </div>
+            
+            <p className="text-xs text-muted-foreground pt-2 border-t border-border">
+              The algorithm combines quantitative data with qualitative indicators to provide the most comprehensive anime comparison available, powered by real MyAnimeList data through Jikan API.
             </p>
           </CardContent>
         </Card>
