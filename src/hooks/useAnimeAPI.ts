@@ -14,6 +14,11 @@ interface AnimeData {
   title_english?: string;
   synopsis?: string;
   score?: number;
+  scored_by?: number;
+  rank?: number;
+  popularity?: number;
+  members?: number;
+  favorites?: number;
   type?: string;
   episodes?: number;
   year?: number;
@@ -21,8 +26,16 @@ interface AnimeData {
   images: {
     jpg: {
       large_image_url: string;
+      image_url: string;
     };
   };
+  aired?: {
+    from: string;
+    to?: string;
+  };
+  studios?: Array<{ name: string }>;
+  duration?: string;
+  rating?: string;
 }
 
 interface FilterState {
@@ -271,6 +284,34 @@ export const useAnimeAPI = () => {
     }
   }, [fetchAnimeWithFilters, fetchRandomAnime]);
 
+  const searchAnime = useCallback(async (query: string): Promise<AnimeData[]> => {
+    try {
+      await delay(1000); // Rate limit protection
+      console.log('Searching for anime:', query);
+      
+      const response = await axios.get(`${JIKAN_BASE_URL}/anime`, {
+        params: { 
+          q: query,
+          limit: 10,
+          order_by: 'score',
+          sort: 'desc'
+        }
+      });
+      
+      const results = response.data.data?.filter((anime: AnimeData) => 
+        anime.images?.jpg?.large_image_url && 
+        anime.synopsis &&
+        anime.title
+      ) || [];
+      
+      console.log('Search results:', results.length, 'anime found for query:', query);
+      return results;
+    } catch (error) {
+      console.error('Failed to search anime:', error);
+      return [];
+    }
+  }, []);
+
   const resetSession = useCallback(() => {
     setShownAnimeIds(new Set());
     setAvailableAnime([]);
@@ -288,6 +329,7 @@ export const useAnimeAPI = () => {
     shownCount: shownAnimeIds.size,
     isExhausted,
     getNextAnime,
-    resetSession
+    resetSession,
+    searchAnime
   };
 };

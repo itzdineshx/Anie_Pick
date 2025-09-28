@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Menu, X, Search, Bookmark, Filter, RotateCcw, HomeIcon, Heart } from 'lucide-react';
+import { Menu, X, Search, Bookmark, Filter, RotateCcw, HomeIcon, Heart, Swords } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -118,6 +119,7 @@ const Header = ({ genres = [], filters, onFiltersChange, onResetFilters, favorit
 
   const navItems = [
     { label: 'Home', href: '/', icon: HomeIcon },
+    { label: 'Battle Mode', href: '/battle', icon: Swords },
     { label: 'Filters', href: '#', icon: Filter },
     { label: 'Favorites', href: '#', icon: Heart },
     { label: 'About', href: '#about', icon: Search },
@@ -555,16 +557,16 @@ const Header = ({ genres = [], filters, onFiltersChange, onResetFilters, favorit
                   </Button>
                 );
               }
-              return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative"
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </a>
-              );
+      return (
+        <Link
+          key={item.label}
+          to={item.href}
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative"
+        >
+          <item.icon className="w-4 h-4" />
+          {item.label}
+        </Link>
+      );
             })}
           </nav>
 
@@ -602,17 +604,17 @@ const Header = ({ genres = [], filters, onFiltersChange, onResetFilters, favorit
                       </Button>
                     );
                   }
-                  return (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      {item.label}
-                    </a>
-                  );
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.href}
+                        className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        {item.label}
+                      </Link>
+                    );
                 })}
 
                 
