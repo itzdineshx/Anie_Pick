@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share2, Swords, Trophy, Users, Calendar, Star, Play, Clock } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ArrowLeft, Download, Share2, Swords, Trophy, Users, Calendar, Star, Play, Clock, FileImage, FileText, Sparkles, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAnimeAPI } from '@/hooks/useAnimeAPI';
 import { FloatingPatterns, SacredGeometry } from '@/components/AnimePatterns';
 import { JapaneseCornerOrnaments } from '@/components/AnimeDecorations';
 import narutoRedMoonBg from '@/assets/naruto-red-moon-bg.jpg';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface BattleAnime {
   mal_id: number;
@@ -50,6 +53,9 @@ const Battle = () => {
   const [loading2, setLoading2] = useState(false);
   const [winner, setWinner] = useState<'anime1' | 'anime2' | null>(null);
   const [battleResults, setBattleResults] = useState<any>(null);
+  const [battling, setBattling] = useState(false);
+  const [battleProgress, setBattleProgress] = useState(0);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = async (query: string, setAnime: (anime: BattleAnime | null) => void, setLoading: (loading: boolean) => void) => {
     if (!query.trim()) return;
@@ -168,7 +174,7 @@ const Battle = () => {
     }));
   };
 
-  const startBattle = () => {
+  const startBattle = async () => {
     if (!anime1 || !anime2) {
       toast({
         title: "Battle Requirements",
@@ -176,6 +182,16 @@ const Battle = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    setBattling(true);
+    setBattleProgress(0);
+
+    // Simulate battle animation
+    const progressSteps = [20, 40, 60, 80, 100];
+    for (const step of progressSteps) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setBattleProgress(step);
     }
 
     const score1 = calculateDetailedBattleScore(anime1);
@@ -200,51 +216,85 @@ const Battle = () => {
     };
     
     setBattleResults(results);
+    setBattling(false);
     
     toast({
-      title: "Battle Complete!",
+      title: "🏆 Battle Complete!",
       description: `${battleWinner === 'anime1' ? anime1.title : anime2.title} wins the battle!`,
     });
   };
 
-  const downloadResults = () => {
-    if (!battleResults) return;
+  const downloadAsImage = async () => {
+    if (!resultsRef.current || !battleResults) return;
 
-    const results = {
-      battleTitle: `${battleResults.anime1.title} vs ${battleResults.anime2.title}`,
-      winner: battleResults.winner === 'anime1' ? battleResults.anime1.title : battleResults.anime2.title,
-      anime1: {
-        title: battleResults.anime1.title,
-        score: battleResults.anime1.score,
-        battleScore: battleResults.anime1.battleScore.toFixed(2),
-        rank: battleResults.anime1.rank,
-        members: battleResults.anime1.members,
-        episodes: battleResults.anime1.episodes
-      },
-      anime2: {
-        title: battleResults.anime2.title,
-        score: battleResults.anime2.score,
-        battleScore: battleResults.anime2.battleScore.toFixed(2),
-        rank: battleResults.anime2.rank,
-        members: battleResults.anime2.members,
-        episodes: battleResults.anime2.episodes
-      },
-      battleDate: new Date(battleResults.battleDate).toLocaleDateString(),
-      generatedBy: "AniePick Battle Mode"
-    };
+    try {
+      toast({
+        title: "Generating Image...",
+        description: "Please wait while we create your battle results image.",
+      });
 
-    const dataStr = JSON.stringify(results, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `anime-battle-${results.battleTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.json`;
-    link.click();
-    
-    toast({
-      title: "Results Downloaded",
-      description: "Battle results have been saved to your device.",
-    });
+      const canvas = await html2canvas(resultsRef.current, {
+        backgroundColor: '#0a0a0a',
+        scale: 2,
+        logging: false,
+        useCORS: true
+      });
+
+      const link = document.createElement('a');
+      link.download = `anime-battle-${battleResults.anime1.title}-vs-${battleResults.anime2.title}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      toast({
+        title: "Image Downloaded!",
+        description: "Battle results have been saved as an image.",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate image. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadAsPDF = async () => {
+    if (!resultsRef.current || !battleResults) return;
+
+    try {
+      toast({
+        title: "Generating PDF...",
+        description: "Please wait while we create your battle results PDF.",
+      });
+
+      const canvas = await html2canvas(resultsRef.current, {
+        backgroundColor: '#0a0a0a',
+        scale: 2,
+        logging: false,
+        useCORS: true
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`anime-battle-${battleResults.anime1.title}-vs-${battleResults.anime2.title}.pdf`);
+
+      toast({
+        title: "PDF Downloaded!",
+        description: "Battle results have been saved as a PDF.",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const shareResults = async () => {
@@ -282,6 +332,8 @@ const Battle = () => {
     setSearch2('');
     setWinner(null);
     setBattleResults(null);
+    setBattling(false);
+    setBattleProgress(0);
   };
 
   const AnimeCard = ({ anime, isWinner, battleScore }: { anime: BattleAnime, isWinner?: boolean, battleScore?: number }) => (
@@ -451,29 +503,45 @@ const Battle = () => {
 
         {/* Battle Controls */}
         <div className="text-center space-y-4 mb-8">
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             <Button 
               onClick={startBattle} 
-              disabled={!anime1 || !anime2}
+              disabled={!anime1 || !anime2 || battling}
               size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 relative overflow-hidden group"
             >
-              <Swords className="w-4 h-4 mr-2" />
-              Start Battle!
+              <Swords className={`w-4 h-4 mr-2 ${battling ? 'animate-spin' : ''}`} />
+              {battling ? 'Battling...' : 'Start Battle!'}
+              <Sparkles className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Button>
             <Button onClick={resetBattle} variant="outline">
               Reset Battle
             </Button>
           </div>
 
+          {battling && (
+            <div className="max-w-md mx-auto space-y-2">
+              <div className="flex items-center justify-center gap-2 text-primary animate-pulse">
+                <Zap className="w-4 h-4" />
+                <span className="text-sm font-medium">Analyzing battle data...</span>
+                <Zap className="w-4 h-4" />
+              </div>
+              <Progress value={battleProgress} className="h-2" />
+            </div>
+          )}
+
           {battleResults && (
-            <div className="flex justify-center gap-4">
-              <Button onClick={downloadResults} variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Download Results
+            <div className="flex justify-center gap-3 flex-wrap">
+              <Button onClick={downloadAsImage} variant="outline" className="gap-2">
+                <FileImage className="w-4 h-4" />
+                Download as Image
               </Button>
-              <Button onClick={shareResults} variant="outline">
-                <Share2 className="w-4 h-4 mr-2" />
+              <Button onClick={downloadAsPDF} variant="outline" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Download as PDF
+              </Button>
+              <Button onClick={shareResults} variant="outline" className="gap-2">
+                <Share2 className="w-4 h-4" />
                 Share Results
               </Button>
             </div>
@@ -482,98 +550,209 @@ const Battle = () => {
 
         {/* Detailed Battle Results */}
         {battleResults && (
-          <div className="space-y-6 mb-8">
+          <div ref={resultsRef} className="space-y-6 mb-8 bg-background p-6 rounded-xl">
             {/* Winner Announcement */}
-            <Card className="sophisticated-card bg-gradient-to-r from-primary/20 to-accent/20 border-2 border-primary/50">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <Trophy className="w-16 h-16 text-primary" />
+            <Card className="sophisticated-card bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 border-2 border-primary/50 shadow-2xl shadow-primary/20 overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent)] animate-pulse pointer-events-none" />
+              <CardHeader className="text-center relative">
+                <div className="flex justify-center mb-4 animate-bounce">
+                  <Trophy className="w-20 h-20 text-primary drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]" />
                 </div>
-                <CardTitle className="text-3xl font-display bg-gradient-red-moon bg-clip-text text-transparent">
+                <CardTitle className="text-4xl font-display bg-gradient-red-moon bg-clip-text text-transparent mb-2">
                   🏆 VICTORY ANNOUNCEMENT 🏆
                 </CardTitle>
-                <CardDescription className="text-lg mt-2">
+                <CardDescription className="text-xl font-semibold text-primary mt-2 flex items-center justify-center gap-2">
+                  <Sparkles className="w-5 h-5" />
                   {battleResults.winner === 'anime1' ? battleResults.anime1.title : battleResults.anime2.title} emerges victorious!
+                  <Sparkles className="w-5 h-5" />
                 </CardDescription>
+                <div className="mt-3 text-sm text-muted-foreground">
+                  Battle completed on {new Date(battleResults.battleDate).toLocaleString()}
+                </div>
               </CardHeader>
-              <CardContent className="text-center">
-                <div className="grid md:grid-cols-2 gap-4 mt-4">
-                  <div className={`p-4 rounded-lg ${battleResults.winner === 'anime1' ? 'bg-primary/20 border-2 border-primary' : 'bg-muted/50'}`}>
-                    <h3 className="font-semibold text-lg">{battleResults.anime1.title}</h3>
-                    <p className="text-2xl font-bold text-primary">
-                      {battleResults.anime1.battleScore.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Battle Score</p>
+              <CardContent className="text-center relative">
+                <div className="grid md:grid-cols-2 gap-6 mt-6">
+                  <div className={`p-6 rounded-xl transition-all duration-500 ${
+                    battleResults.winner === 'anime1' 
+                      ? 'bg-primary/25 border-2 border-primary shadow-lg shadow-primary/30 scale-105' 
+                      : 'bg-muted/50 border border-border/50'
+                  }`}>
+                    <h3 className="font-bold text-xl mb-2">{battleResults.anime1.title}</h3>
+                    <div className="mb-2">
+                      <p className="text-4xl font-bold text-primary drop-shadow-lg">
+                        {battleResults.anime1.battleScore.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">Battle Score</p>
+                    </div>
+                    {battleResults.winner === 'anime1' && (
+                      <Badge variant="default" className="mt-2 text-base px-4 py-1">
+                        <Trophy className="w-4 h-4 mr-1" />
+                        Champion
+                      </Badge>
+                    )}
                   </div>
-                  <div className={`p-4 rounded-lg ${battleResults.winner === 'anime2' ? 'bg-primary/20 border-2 border-primary' : 'bg-muted/50'}`}>
-                    <h3 className="font-semibold text-lg">{battleResults.anime2.title}</h3>
-                    <p className="text-2xl font-bold text-primary">
-                      {battleResults.anime2.battleScore.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Battle Score</p>
+                  <div className={`p-6 rounded-xl transition-all duration-500 ${
+                    battleResults.winner === 'anime2' 
+                      ? 'bg-primary/25 border-2 border-primary shadow-lg shadow-primary/30 scale-105' 
+                      : 'bg-muted/50 border border-border/50'
+                  }`}>
+                    <h3 className="font-bold text-xl mb-2">{battleResults.anime2.title}</h3>
+                    <div className="mb-2">
+                      <p className="text-4xl font-bold text-primary drop-shadow-lg">
+                        {battleResults.anime2.battleScore.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">Battle Score</p>
+                    </div>
+                    {battleResults.winner === 'anime2' && (
+                      <Badge variant="default" className="mt-2 text-base px-4 py-1">
+                        <Trophy className="w-4 h-4 mr-1" />
+                        Champion
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Detailed Comparison */}
-            <Card className="sophisticated-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-primary" />
+            <Card className="sophisticated-card border-2 border-primary/20">
+              <CardHeader className="border-b border-border/50">
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <Star className="w-6 h-6 text-primary" />
                   Detailed Battle Analysis
+                  <Star className="w-6 h-6 text-primary" />
                 </CardTitle>
                 <CardDescription>
-                  Head-to-head comparison across all major anime metrics
+                  Head-to-head comparison across all major anime metrics from MyAnimeList
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="space-y-4">
                   {battleResults.detailedComparison.map((metric: any, index: number) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-border rounded-lg">
-                      <div className="md:col-span-1">
-                        <h4 className="font-semibold text-sm">{metric.name}</h4>
-                        <p className="text-xs text-muted-foreground">Weight: {metric.weight}</p>
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 border-2 border-border/50 rounded-xl hover:border-primary/30 transition-all duration-300 hover:shadow-lg bg-card/50">
+                      <div className="md:col-span-1 flex flex-col justify-center">
+                        <h4 className="font-bold text-base flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          {metric.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1">Weight: {metric.weight}</p>
                       </div>
-                      <div className={`text-center p-2 rounded ${metric.winner === 'anime1' ? 'bg-primary/20 text-primary font-bold' : 'bg-muted/50'}`}>
-                        <p className="text-sm font-medium">{battleResults.anime1.title}</p>
-                        <p className="text-lg">{metric.format(metric.anime1Value)}</p>
+                      <div className={`text-center p-4 rounded-lg transition-all duration-300 ${
+                        metric.winner === 'anime1' 
+                          ? 'bg-primary/20 ring-2 ring-primary text-primary font-bold shadow-lg scale-105' 
+                          : 'bg-muted/50'
+                      }`}>
+                        <p className="text-sm font-semibold mb-1">{battleResults.anime1.title.length > 20 ? battleResults.anime1.title.substring(0, 20) + '...' : battleResults.anime1.title}</p>
+                        <p className="text-xl font-bold">{metric.format(metric.anime1Value)}</p>
+                        {metric.winner === 'anime1' && (
+                          <Badge variant="default" className="mt-2 text-xs">Winner</Badge>
+                        )}
                       </div>
                       <div className="text-center flex items-center justify-center">
-                        <span className="text-2xl">⚔️</span>
+                        <Swords className="w-6 h-6 text-primary" />
                       </div>
-                      <div className={`text-center p-2 rounded ${metric.winner === 'anime2' ? 'bg-primary/20 text-primary font-bold' : 'bg-muted/50'}`}>
-                        <p className="text-sm font-medium">{battleResults.anime2.title}</p>
-                        <p className="text-lg">{metric.format(metric.anime2Value)}</p>
+                      <div className={`text-center p-4 rounded-lg transition-all duration-300 ${
+                        metric.winner === 'anime2' 
+                          ? 'bg-primary/20 ring-2 ring-primary text-primary font-bold shadow-lg scale-105' 
+                          : 'bg-muted/50'
+                      }`}>
+                        <p className="text-sm font-semibold mb-1">{battleResults.anime2.title.length > 20 ? battleResults.anime2.title.substring(0, 20) + '...' : battleResults.anime2.title}</p>
+                        <p className="text-xl font-bold">{metric.format(metric.anime2Value)}</p>
+                        {metric.winner === 'anime2' && (
+                          <Badge variant="default" className="mt-2 text-xs">Winner</Badge>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Additional Stats */}
-                <div className="mt-6 pt-6 border-t border-border">
-                  <h4 className="font-semibold mb-4">Additional Battle Stats</h4>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h5 className="font-medium text-sm mb-2">{battleResults.anime1.title}</h5>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p><strong>Type:</strong> {battleResults.anime1.type || 'N/A'}</p>
-                        <p><strong>Episodes:</strong> {battleResults.anime1.episodes || 'Unknown'}</p>
-                        <p><strong>Year:</strong> {battleResults.anime1.aired?.from ? new Date(battleResults.anime1.aired.from).getFullYear() : 'N/A'}</p>
-                        <p><strong>Rating:</strong> {battleResults.anime1.rating || 'N/A'}</p>
-                        <p><strong>Studios:</strong> {battleResults.anime1.studios?.map((s: any) => s.name).join(', ') || 'N/A'}</p>
-                        <p><strong>Genres:</strong> {battleResults.anime1.genres?.slice(0, 3).map((g: any) => g.name).join(', ') || 'N/A'}</p>
+                <div className="mt-8 pt-6 border-t-2 border-border">
+                  <h4 className="font-bold text-xl mb-6 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Additional Battle Statistics
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className={`p-5 rounded-xl border-2 ${
+                      battleResults.winner === 'anime1' 
+                        ? 'bg-primary/10 border-primary/50' 
+                        : 'bg-muted/30 border-border/50'
+                    }`}>
+                      <h5 className="font-bold text-lg mb-3 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        {battleResults.anime1.title}
+                        {battleResults.winner === 'anime1' && <Trophy className="w-4 h-4 text-primary ml-auto" />}
+                      </h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Type:</span>
+                          <span className="font-semibold">{battleResults.anime1.type || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Episodes:</span>
+                          <span className="font-semibold">{battleResults.anime1.episodes || 'Unknown'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Year:</span>
+                          <span className="font-semibold">{battleResults.anime1.aired?.from ? new Date(battleResults.anime1.aired.from).getFullYear() : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Rating:</span>
+                          <span className="font-semibold">{battleResults.anime1.rating || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Studios:</span>
+                          <span className="font-semibold text-right">{battleResults.anime1.studios?.map((s: any) => s.name).join(', ') || 'N/A'}</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground block mb-1">Genres:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {battleResults.anime1.genres?.slice(0, 5).map((g: any, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-xs">{g.name}</Badge>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <h5 className="font-medium text-sm mb-2">{battleResults.anime2.title}</h5>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p><strong>Type:</strong> {battleResults.anime2.type || 'N/A'}</p>
-                        <p><strong>Episodes:</strong> {battleResults.anime2.episodes || 'Unknown'}</p>
-                        <p><strong>Year:</strong> {battleResults.anime2.aired?.from ? new Date(battleResults.anime2.aired.from).getFullYear() : 'N/A'}</p>
-                        <p><strong>Rating:</strong> {battleResults.anime2.rating || 'N/A'}</p>
-                        <p><strong>Studios:</strong> {battleResults.anime2.studios?.map((s: any) => s.name).join(', ') || 'N/A'}</p>
-                        <p><strong>Genres:</strong> {battleResults.anime2.genres?.slice(0, 3).map((g: any) => g.name).join(', ') || 'N/A'}</p>
+                    <div className={`p-5 rounded-xl border-2 ${
+                      battleResults.winner === 'anime2' 
+                        ? 'bg-primary/10 border-primary/50' 
+                        : 'bg-muted/30 border-border/50'
+                    }`}>
+                      <h5 className="font-bold text-lg mb-3 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        {battleResults.anime2.title}
+                        {battleResults.winner === 'anime2' && <Trophy className="w-4 h-4 text-primary ml-auto" />}
+                      </h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Type:</span>
+                          <span className="font-semibold">{battleResults.anime2.type || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Episodes:</span>
+                          <span className="font-semibold">{battleResults.anime2.episodes || 'Unknown'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Year:</span>
+                          <span className="font-semibold">{battleResults.anime2.aired?.from ? new Date(battleResults.anime2.aired.from).getFullYear() : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Rating:</span>
+                          <span className="font-semibold">{battleResults.anime2.rating || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground">Studios:</span>
+                          <span className="font-semibold text-right">{battleResults.anime2.studios?.map((s: any) => s.name).join(', ') || 'N/A'}</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50">
+                          <span className="text-muted-foreground block mb-1">Genres:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {battleResults.anime2.genres?.slice(0, 5).map((g: any, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-xs">{g.name}</Badge>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
