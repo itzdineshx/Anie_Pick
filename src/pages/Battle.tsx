@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { ArrowLeft, Download, Share2, Swords, Trophy, Users, Calendar, Star, Play, Clock, FileImage, FileText, Sparkles, Zap } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Download, Share2, Swords, Trophy, Users, Calendar, Star, Play, Clock, FileImage, FileText, Sparkles, Zap, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,90 @@ const Battle = () => {
   const [battling, setBattling] = useState(false);
   const [battleProgress, setBattleProgress] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Load shared results from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resultsParam = urlParams.get('results');
+    
+    if (resultsParam) {
+      try {
+        const decodedData = JSON.parse(atob(decodeURIComponent(resultsParam)));
+        
+        // Fetch full anime details for both anime
+        const loadSharedBattle = async () => {
+          try {
+            const [results1, results2] = await Promise.all([
+              searchAnime(decodedData.anime1.title),
+              searchAnime(decodedData.anime2.title)
+            ]);
+
+            if (results1 && results1.length > 0 && results2 && results2.length > 0) {
+              const battleAnime1: BattleAnime = {
+                ...results1[0],
+                score: results1[0].score || 0,
+                scored_by: results1[0].scored_by || 0,
+                rank: results1[0].rank || 999999,
+                popularity: results1[0].popularity || 999999,
+                members: results1[0].members || 0,
+                favorites: results1[0].favorites || 0,
+                aired: results1[0].aired || { from: new Date().toISOString() },
+                genres: results1[0].genres || [],
+                studios: results1[0].studios || []
+              };
+
+              const battleAnime2: BattleAnime = {
+                ...results2[0],
+                score: results2[0].score || 0,
+                scored_by: results2[0].scored_by || 0,
+                rank: results2[0].rank || 999999,
+                popularity: results2[0].popularity || 999999,
+                members: results2[0].members || 0,
+                favorites: results2[0].favorites || 0,
+                aired: results2[0].aired || { from: new Date().toISOString() },
+                genres: results2[0].genres || [],
+                studios: results2[0].studios || []
+              };
+
+              setAnime1(battleAnime1);
+              setAnime2(battleAnime2);
+
+              // Recalculate battle
+              const score1 = calculateDetailedBattleScore(battleAnime1);
+              const score2 = calculateDetailedBattleScore(battleAnime2);
+              const detailedComparison = getDetailedComparison(battleAnime1, battleAnime2);
+              
+              const battleWinner = score1 > score2 ? 'anime1' : 'anime2';
+              setWinner(battleWinner);
+              
+              setBattleResults({
+                anime1: { ...battleAnime1, battleScore: score1 },
+                anime2: { ...battleAnime2, battleScore: score2 },
+                winner: battleWinner,
+                detailedComparison,
+                battleDate: new Date().toISOString()
+              });
+
+              toast({
+                title: "Shared Battle Loaded!",
+                description: "Viewing shared battle results.",
+              });
+            }
+          } catch (error) {
+            toast({
+              title: "Failed to Load",
+              description: "Could not load shared battle results.",
+              variant: "destructive"
+            });
+          }
+        };
+
+        loadSharedBattle();
+      } catch (error) {
+        console.error("Failed to parse shared results:", error);
+      }
+    }
+  }, []);
 
   const handleSearch = async (query: string, setAnime: (anime: BattleAnime | null) => void, setLoading: (loading: boolean) => void) => {
     if (!query.trim()) return;
@@ -300,27 +384,51 @@ const Battle = () => {
   const shareResults = async () => {
     if (!battleResults) return;
 
-    const shareText = `🥊 Anime Battle Results 🥊\n\n${battleResults.anime1.title} vs ${battleResults.anime2.title}\n\n🏆 Winner: ${battleResults.winner === 'anime1' ? battleResults.anime1.title : battleResults.anime2.title}\n\nBattle Scores:\n📊 ${battleResults.anime1.title}: ${battleResults.anime1.battleScore.toFixed(2)}\n📊 ${battleResults.anime2.title}: ${battleResults.anime2.battleScore.toFixed(2)}\n\n⚔️ Powered by AniePick Battle Mode`;
+    // Create shareable URL with battle data
+    const battleData = {
+      anime1: {
+        id: battleResults.anime1.mal_id,
+        title: battleResults.anime1.title,
+        score: battleResults.anime1.battleScore.toFixed(2)
+      },
+      anime2: {
+        id: battleResults.anime2.mal_id,
+        title: battleResults.anime2.title,
+        score: battleResults.anime2.battleScore.toFixed(2)
+      },
+      winner: battleResults.winner,
+      date: new Date(battleResults.battleDate).toLocaleDateString()
+    };
+
+    const encodedData = btoa(JSON.stringify(battleData));
+    const shareUrl = `${window.location.origin}/battle?results=${encodeURIComponent(encodedData)}`;
+    
+    const shareText = `🥊 Anime Battle Results 🥊\n\n${battleResults.anime1.title} vs ${battleResults.anime2.title}\n\n🏆 Winner: ${battleResults.winner === 'anime1' ? battleResults.anime1.title : battleResults.anime2.title}\n\nView full results: ${shareUrl}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Anime Battle Results',
-          text: shareText
+          text: shareText,
+          url: shareUrl
+        });
+        toast({
+          title: "Shared Successfully!",
+          description: "Battle results link has been shared.",
         });
       } catch (error) {
         // Fallback to clipboard
-        navigator.clipboard.writeText(shareText);
+        navigator.clipboard.writeText(shareUrl);
         toast({
-          title: "Copied to Clipboard",
-          description: "Battle results copied to clipboard for sharing.",
+          title: "Link Copied!",
+          description: "Battle results link copied to clipboard.",
         });
       }
     } else {
-      navigator.clipboard.writeText(shareText);
+      navigator.clipboard.writeText(shareUrl);
       toast({
-        title: "Copied to Clipboard", 
-        description: "Battle results copied to clipboard for sharing.",
+        title: "Link Copied!",
+        description: "Battle results link copied to clipboard. Share it with anyone!",
       });
     }
   };
@@ -531,19 +639,27 @@ const Battle = () => {
           )}
 
           {battleResults && (
-            <div className="flex justify-center gap-3 flex-wrap">
-              <Button onClick={downloadAsImage} variant="outline" className="gap-2">
-                <FileImage className="w-4 h-4" />
-                Download as Image
-              </Button>
-              <Button onClick={downloadAsPDF} variant="outline" className="gap-2">
-                <FileText className="w-4 h-4" />
-                Download as PDF
-              </Button>
-              <Button onClick={shareResults} variant="outline" className="gap-2">
-                <Share2 className="w-4 h-4" />
-                Share Results
-              </Button>
+            <div className="space-y-3">
+              <div className="flex justify-center gap-3 flex-wrap">
+                <Button onClick={downloadAsImage} variant="outline" className="gap-2">
+                  <FileImage className="w-4 h-4" />
+                  Download as Image
+                </Button>
+                <Button onClick={downloadAsPDF} variant="outline" className="gap-2">
+                  <FileText className="w-4 h-4" />
+                  Download as PDF
+                </Button>
+                <Button onClick={shareResults} variant="outline" className="gap-2">
+                  <Share2 className="w-4 h-4" />
+                  Share Results
+                </Button>
+              </div>
+              <div className="flex justify-center">
+                <Badge variant="secondary" className="text-xs px-3 py-1 gap-1">
+                  <LinkIcon className="w-3 h-3" />
+                  Share link copied when you click Share Results
+                </Badge>
+              </div>
             </div>
           )}
         </div>
